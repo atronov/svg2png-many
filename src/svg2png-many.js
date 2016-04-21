@@ -1,18 +1,8 @@
 'use strict';
 
-const phantom = require('phantom'),
-    fs = require('fs'),
-    path = require('path');
-
-const SVG_REGEX = /\.svg$/i;
-
-/**
- * How many pages can be opened simultaneously in PhantomJS
- * @type {number}
- */
-const SIMULTANEOUS_PAGES = 20;
-
-const DEBUG = typeof v8debug === 'object';
+import phantom from 'phantom';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * @typedef {object} Sizes
@@ -20,16 +10,32 @@ const DEBUG = typeof v8debug === 'object';
  * @prop {number} [width]
  */
 
-module.exports = {
-    svg2PngFiles,
-    svg2PngDir
-};
+/**
+ * @typedef {number} ParallelPages How many pages can be opened simultaneously in PhantomJS
+ */
+
+/**
+ * All matched files will be converted
+ */
+const SVG_REGEX = /\.svg$/i;
+
+/**
+ * Default value
+ * @type {ParallelPages} 
+ */
+const PARALLEL_PAGES = 20;
+
+const DEBUG = typeof v8debug === 'object';
+
+
+export default svg2PngDir;
 
 /**
  * @param fileMap {object.<string, string>} key - src file path, value - dst file path
  * @param {Sizes} [size]
+ * @param {ParallelPages} [pages]
  */
-function svg2PngFiles(fileMap, size) {
+export function svg2PngFiles(fileMap, size = {}, pages = PARALLEL_PAGES) {
     let phantomInstance;
     const closePhantom = () => {
         if (phantomInstance) {
@@ -41,7 +47,7 @@ function svg2PngFiles(fileMap, size) {
         .then(instance => {
             log('phantom instance created');
             phantomInstance = instance;
-            return convertMany(instance, fileMap, size);
+            return convertMany(instance, fileMap, size, pages);
         })
         .then(() => closePhantom(), errors => {
             closePhantom();
@@ -50,11 +56,13 @@ function svg2PngFiles(fileMap, size) {
 }
 
 /**
+ * All svg files from srcDir will be converted with png into dstDir with the same name
  * @param {string} srcDir
  * @param {string} dstDir
  * @param {Sizes} [size]
+ * @param {ParallelPages} [pages]
  */
-function svg2PngDir(srcDir, dstDir, size) {
+export function svg2PngDir(srcDir, dstDir, size = {}, pages = PARALLEL_PAGES) {
     return new Promise((resolve, reject) => {
         fs.readdir(srcDir, (error, files) => {
             if (error) {
@@ -69,7 +77,48 @@ function svg2PngDir(srcDir, dstDir, size) {
             });
             resolve(fileMap);
         });
-    }).then(fileMap => svg2PngFiles(fileMap, size));
+    }).then(fileMap => svg2PngFiles(fileMap, size, pages));
+}
+
+/**
+ * @param {object} instance PhantomJS instance
+ * @param {object.<string, string>} fileMap key - src file path, value - dst file path
+ * @param {Sizes} size
+ * @param {ParallelPages} pages
+ * @returns {Promise<Array<*>,Array<*>> resolved with list of results, rejected with list of errors
+ */
+function convertMany(instance, fileMap, size, pages) {
+    return new Promise((resolveAll, rejectAll) => {
+        const results = [];
+        const errors = [];
+        const poolCapacity = pages;
+        var restWorkers = Object.keys(fileMap)
+            .map(srcPath => () => convert(instance, srcPath, fileMap[srcPath], size));
+        log(`${restWorkers.length} files will be processed`);
+        var waitedCount = restWorkers.length;
+        var startWorker = worker => {
+            return Promise.resolve(worker()).then(result => {
+                results.push(result);
+            }, error => {
+                errors.push(error);
+            });
+        };
+        var processNext = () => {
+            if (restWorkers.length > 0) {
+                let nextWorker = restWorkers.pop();
+                startWorker(nextWorker).then(processNext);
+            } else if (errors.length + results.length >= Object.keys(fileMap).length) {
+                if (errors.length > 0) {
+                    rejectAll(results);
+                } else {
+                    resolveAll(errors);
+                }
+            }
+        };
+        restWorkers.splice(0, poolCapacity).forEach(worker => {
+            startWorker(worker).then(processNext);
+        });
+    });
 }
 
 /**
@@ -77,7 +126,7 @@ function svg2PngDir(srcDir, dstDir, size) {
  * @param {string} srcPath
  * @param {string} dstPath
  * @param {Sizes} [size]
- * @returns {Promise.<string>} resolved with dstPath if success
+ * @returns {Promise<string>} resolved with dstPath if success
  */
 function convert(instance, srcPath, dstPath, size) {
     return Promise.all([instance.createPage(), fileToBase64(srcPath)])
@@ -120,47 +169,6 @@ function checkEvalError(result) {
         return Promise.reject(result.error);
     }
     return result;
-}
-
-/**
- *
- * @param {object} instance PhantomJS instance
- * @param {object.<string, string>} fileMap key - src file path, value - dst file path
- * @param {Sizes} [size]
- * @returns {Promise}
- */
-function convertMany(instance, fileMap, size) {
-    return new Promise((resolveAll, rejectAll) => {
-        const results = [];
-        const errors = [];
-        const poolCapacity = SIMULTANEOUS_PAGES;
-        var restWorkers = Object.keys(fileMap)
-            .map(srcPath => () => convert(instance, srcPath, fileMap[srcPath], size));
-        log(`${restWorkers.length} files will be processed`);
-        var waitedCount = restWorkers.length;
-        var startWorker = worker => {
-            return Promise.resolve(worker()).then(result => {
-                results.push(result);
-            }, error => {
-                errors.push(error);
-            });
-        };
-        var processNext = () => {
-            if (restWorkers.length > 0) {
-                let nextWorker = restWorkers.pop();
-                startWorker(nextWorker).then(processNext);
-            } else if (errors.length + results.length >= Object.keys(fileMap).length) {
-                if (errors.length > 0) {
-                    rejectAll(errors);
-                } else {
-                    resolveAll(errors);
-                }
-            }
-        };
-        restWorkers.splice(0, poolCapacity).forEach(worker => {
-            startWorker(worker).then(processNext);
-        });
-    });
 }
 
 /**

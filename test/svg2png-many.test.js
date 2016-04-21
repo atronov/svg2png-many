@@ -2,7 +2,8 @@
 
 const svg2png = require('../index');
 
-svg2png.svg2PngDir('../tmp', '../results', {width: 500, height: 500} )
+console.log('Go');
+svg2png.svg2PngDir('../tmp', '../results', {width: 500, height: 500})
     .then(() => console.log('Done'), errors => {
     console.error('Errors !!!');
         if (!Array.isArray(errors)) {
