@@ -1,11 +1,28 @@
-{
+{  
+ "author": "Alexey Tronov <atronov@gmail.com>",
   "name": "svg2png-many",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "test": "test"
+  "description": "Fast svg to png converter for many files based on PhantomJS",
+  "homepage": "https://github.com/atronov/svg2png-many",
+  "keywords": [
+    "phantom",
+    "phantomjs",
+    "svg",
+    "png",
+    "converter",
+    "fast"
+  ],
+  "version": "1.0.0", 
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/atronov/svg2png-many.git"
   },
+  "contributors": [
+    {
+      "name": "Alexey Tronov",
+      "email": "atronov@gmail.comm"
+    }
+  ],
   "engines": {
     "node": ">=0.12"
   },
@@ -13,15 +30,6 @@
     "test": "echo \"Error: no test specified\" && exit 1",
      "prepublish": "gulp build"
   },
-  "keywords": [
-    "phantom",
-    "phantomjs",
-    "svg",
-    "png",
-    "converter"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "phantom": "^2.0.x"
   },
