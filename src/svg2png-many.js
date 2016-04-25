@@ -85,7 +85,7 @@ export function svg2PngDir(srcDir, dstDir, size = {}, pages = PARALLEL_PAGES) {
  * @param {object.<string, string>} fileMap key - src file path, value - dst file path
  * @param {Sizes} size
  * @param {ParallelPages} pages
- * @returns {Promise<Array<*>,Array<*>> resolved with list of results, rejected with list of errors
+ * @returns {Promise<Array<*>,Array<*>>} resolved with list of results, rejected with list of errors
  */
 function convertMany(instance, fileMap, size, pages) {
     return new Promise((resolveAll, rejectAll) => {
@@ -93,9 +93,9 @@ function convertMany(instance, fileMap, size, pages) {
         const errors = [];
         const poolCapacity = pages;
         var restWorkers = Object.keys(fileMap)
-            .map(srcPath => () => convert(instance, srcPath, fileMap[srcPath], size));
+            .map(srcPath => () => convert(instance, srcPath, size)
+                .then(buffer => saveBuffer(fileMap[srcPath], buffer)));
         log(`${restWorkers.length} files will be processed`);
-        var waitedCount = restWorkers.length;
         var startWorker = worker => {
             return Promise.resolve(worker()).then(result => {
                 results.push(result);
@@ -109,9 +109,9 @@ function convertMany(instance, fileMap, size, pages) {
                 startWorker(nextWorker).then(processNext);
             } else if (errors.length + results.length >= Object.keys(fileMap).length) {
                 if (errors.length > 0) {
-                    rejectAll(results);
+                    rejectAll(errors);
                 } else {
-                    resolveAll(errors);
+                    resolveAll(results);
                 }
             }
         };
@@ -121,25 +121,43 @@ function convertMany(instance, fileMap, size, pages) {
     });
 }
 
+function saveBuffer(dstPath, buffer) {
+    log(`${dstPath} will be saved `);
+    return new Promise((resolve, reject) => {
+        fs.writeFile(dstPath, buffer, 'utf8', error => {
+            if (error) {
+                log(`${dstPath} saved with error`);
+                reject(error);
+            }
+            log(`${dstPath} saved successfully`);
+            resolve(dstPath);
+        });
+    });
+}
+
 /**
  * @param {object} instance Phantom instance
  * @param {string} srcPath
- * @param {string} dstPath
  * @param {Sizes} [size]
- * @returns {Promise<string>} resolved with dstPath if success
+ * @returns {Promise<Buffer>} resolved with image data
  */
-function convert(instance, srcPath, dstPath, size) {
+function convert(instance, srcPath, size) {
     return Promise.all([instance.createPage(), fileToBase64(srcPath)])
-        .then(results => {
-            let page = results[0];
-            let pageContent = results[1];
-            page.property('onConsoleMessage', log);
+        .then(([page, pageContent]) => {
+            const closePage = () => {
+                if (page) {
+                    page.close()
+                }
+            };
             return page.open(pageContent)
                 .then(status => {
                     if (status !== "success") {
                         let errMsg = `File ${srcPath} has been opened with status ${status}`;
                         logError(errMsg);
                         throw new Error(errMsg);
+                    }
+                    if (DEBUG) {
+                        page.property('onConsoleMessage', msg => console.log(msg));
                     }
                     log(`${srcPath} opened`);
                     size = size || {};
@@ -152,10 +170,20 @@ function convert(instance, srcPath, dstPath, size) {
                         .then(checkEvalError)
                         .then(dimensions => page.property('viewportSize', dimensions))
                 })
-                .then(() => log(`${srcPath} ready to save as ${dstPath}`))
-                .then(() => page.render(dstPath))
-                .then(() => page.close())
-                .then(() => dstPath);
+                .then(() => {
+                    log('Render page');
+                    return page.renderBase64("PNG")
+                })
+                .then(imageBase64 => new Buffer(imageBase64, 'base64'))
+                .then(imageData => {
+                    log(`${srcPath} converted successfully`);
+                    closePage();
+                    return imageData;
+                }, error => {
+                    console.log('Ooops');
+                    closePage();
+                    return Promise.reject(error);
+                });
         });
 }
 
@@ -202,6 +230,7 @@ function logError() {
  * @returns {Sizes|null}
  */
 function getSVGDimensions() {
+    console.log('Get page sizes');
     /* global document: true */
     try {
         var el = document.documentElement;
@@ -239,6 +268,7 @@ function getSVGDimensions() {
  * @returns {Sizes} same as size param
  */
 function setSVGDimensions(sizes) {
+    console.log('Set page sizes', JSON.stringify(sizes));
     try {
         var height = sizes.height;
         var width = sizes.width;

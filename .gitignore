@@ -2,3 +2,5 @@
 /lib
 .idea
 .vscode
+#tmp
+#tests

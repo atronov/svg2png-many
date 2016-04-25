@@ -6,6 +6,7 @@ console.log('Go');
 svg2png.svg2PngDir('../tmp', '../results', {width: 500, height: 500})
     .then(() => console.log('Done'), errors => {
     console.error('Errors !!!');
+        console.log(errors);
         if (!Array.isArray(errors)) {
             errors = [errors];
         }
