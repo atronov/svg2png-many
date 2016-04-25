@@ -25,7 +25,7 @@ const SVG_REGEX = /\.svg$/i;
  */
 const PARALLEL_PAGES = 20;
 
-const DEBUG = typeof v8debug === 'object';
+const DEBUG = typeof v8debug === 'object' || process.env.DEBUG === 'true';
 
 
 export default svg2PngDir;
@@ -49,9 +49,12 @@ export function svg2PngFiles(fileMap, size = {}, pages = PARALLEL_PAGES) {
             phantomInstance = instance;
             return convertMany(instance, fileMap, size, pages);
         })
-        .then(() => closePhantom(), errors => {
-            closePhantom();
-            return Promise.reject(errors);
+        .then(results => {
+                closePhantom();
+                return results;
+            }, errors => {
+                closePhantom();
+                return Promise.reject(errors);
         });
 }
 
