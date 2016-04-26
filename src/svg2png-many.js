@@ -25,7 +25,7 @@ const SVG_REGEX = /\.svg$/i;
  */
 const PARALLEL_PAGES = 20;
 
-const DEBUG = typeof v8debug === 'object' || process.env.DEBUG === 'true';
+const DEBUG = typeof v8debug === 'object' || process.env.DEBUG === 'true' || process.env.VERBOSE === 'true';
 
 
 export default svg2PngDir;
