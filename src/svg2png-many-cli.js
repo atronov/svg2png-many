@@ -30,11 +30,21 @@ export function run() {
             type: 'number',
             describe: 'Number of threads'
         })
+        .option('phantom', {
+            type: 'string',
+            describe: 'Path to alternative phantom'
+        })
         .demand(['i'])
         .argv;
 
-    let { i: srcDir, o: dstDir, w: width, h: height, t: threads } = argv;
+    let { i: srcDir, o: dstDir, w: width, h: height, t: threads, phantom: phantomPath } = argv;
     dstDir = dstDir || srcDir;
+    if (phantomPath) {
+        // TODO this hack allows override path to default PhantomJS path from path from phantom module
+        // find better way to configure this
+        let phantom = require('phantomjs-prebuilt');
+        phantom.path = phantomPath;
+    }
     svg2png(srcDir, dstDir, {width, height}, threads)
         .then(results => {
             if (Array.isArray(results)) {
