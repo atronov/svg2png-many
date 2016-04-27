@@ -8,8 +8,11 @@ Because of it uses one PhantomJS instenct for many files and opens many web-page
 
 ## Banchmark
 I compared speed on 500 files.
+
 **svg2png** vs **svg2png-many**
+
 **11min** vs **27sec**
+
 ```bash
 $ time ./node_modules/.bin/svg2png-many -i src res
 500 files have been converted successfully
