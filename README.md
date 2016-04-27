@@ -7,10 +7,8 @@ The main difference from [svg2png](https://github.com/domenic/svg2png) that it w
 Because of it uses one PhantomJS instenct for many files and opens many web-pages simultaniously.
 
 ## Banchmark
-I compared speed on 500 files.
-
-**svg2png** vs **svg2png-many**
-
+I compared speed on 500 files.<br/>
+**svg2png** vs **svg2png-many**<br/>
 **11min** vs **27sec**
 
 ```bash
