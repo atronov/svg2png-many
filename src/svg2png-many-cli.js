@@ -35,6 +35,7 @@ export function run() {
             describe: 'Path to alternative phantom'
         })
         .demand(['i'])
+        .addHelpOpt("help")
         .argv;
 
     let { i: srcDir, o: dstDir, w: width, h: height, t: threads, phantom: phantomPath } = argv;
