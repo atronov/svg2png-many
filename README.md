@@ -6,7 +6,55 @@ Inspired by [svg2png](https://github.com/domenic/svg2png) and [phantomjs-node](h
 The main difference from [svg2png](https://github.com/domenic/svg2png) that it works **much faster** convering many files.
 Because of it uses one PhantomJS instenct for many files and opens many web-pages simultaniously.
 
-## Banchmark
+## Using as NodeJS module
+```javascript
+const svg2png = require('svg2png-many');
+
+var srcDir = 'dir/with/source/svgs';
+var dstDir = 'dir/with/result/pngs';
+svg2png(srcDir, dstDir).then(
+  () => console.log('Done'),
+  // rejected with the list of all happened errors
+  // even if error happens while processing one file it will not stop conversion other files
+  // first all files are processed, only then the result promise is rejected or resolved
+  errors => errors.forEach(error => {
+    arrors = Array.isArray(errors) ? errors : [errors];
+    console.error(error.stack || error);
+  })
+);
+// same function can be as alias
+svg2png.svg2PngDir(srcDir, dstDir);
+
+// convert only certain files to defined destination
+var fileMap = {
+  'one/file/to/convert.svg': 'first/file/result/image.png',
+  'second/file/to/process.svg': 'other/place/to/save/result.png'
+};
+svg2png.svg2PngFiles(fileMap);
+```
+
+
+## Using as CLI
+To convert all svg files from one folter and put png to the other
+```bash
+$ ./node_modules/.bin/svg2png-many -i dir/with/source/svgs/ -o dir/with/result/pngs/
+3 files have been converted successfully
+```
+To see all possible argument, run with help option
+```bash
+$ ./node_modules/.bin/svg2png-many --help
+Options:
+  -i, --input    Path to dir with svg files                  [string] [required]
+  -o, --output   Path to dir with results, it not defined, input will be used
+                                                                        [string]
+  -w, --width    With of result png                                     [number]
+  -h, --height   Height of result png                                   [number]
+  -t, --threads  Number of threads                                      [number]
+  --phantom      Path to alternative phantom                            [string]
+  --help         Show help                                             [boolean]
+```
+
+## Benchmark
 I compared speed on 500 files.<br/>
 **svg2png** vs **svg2png-many**<br/>
 **11min** vs **27sec**
