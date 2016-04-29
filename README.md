@@ -7,9 +7,11 @@ The main difference from [svg2png](https://github.com/domenic/svg2png) that it w
 Because of it uses one PhantomJS instenct for many files and opens many web-pages simultaniously.
 
 ## Using as NodeJS module
+**NOTE!** All functions below return a promise.
+
+Convert all svg from certain folder to the other folder.
 ```javascript
 const svg2png = require('svg2png-many');
-
 var srcDir = 'dir/with/source/svgs';
 var dstDir = 'dir/with/result/pngs';
 svg2png(srcDir, dstDir).then(
@@ -22,10 +24,13 @@ svg2png(srcDir, dstDir).then(
     console.error(error.stack || error);
   })
 );
-// same function can be as alias
-svg2png.svg2PngDir(srcDir, dstDir);
 
-// convert only certain files to defined destination
+// same function can be run as alias
+svg2png.svg2PngDir(srcDir, dstDir);
+```
+Convert only certain files to defined destination.<br/>
+All possible arguments described below are also accepted by this function.
+```javascript
 var fileMap = {
   'one/file/to/convert.svg': 'first/file/result/image.png',
   'second/file/to/process.svg': 'other/place/to/save/result.png'
@@ -33,6 +38,23 @@ var fileMap = {
 svg2png.svg2PngFiles(fileMap);
 ```
 
+Define sizes of result png.<br/>
+Height or/and width can be skipped. Aspect ration is preserved.
+```javascript
+var sizes = {
+	height: 300,
+	width: 500
+};
+svg2png(srcDir, dstDir, sizes);
+```
+
+Define how many web-pages can be opened in PhantomJS simultaneously.<br/>
+This argument manages performance aspects. The higher this argument is the faster conversion, but more memory is consumed.<br/>
+Default value is 20.
+```javascript
+var parallelPages = 10;
+svg2png(srcDir, dstDir, null, parallelPages);
+```
 
 ## Using as CLI
 To convert all svg files from one folter and put png to the other
