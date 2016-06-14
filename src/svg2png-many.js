@@ -127,7 +127,7 @@ function convertMany(instance, fileMap, size, pages) {
 function saveBuffer(dstPath, buffer) {
     log(`${dstPath} will be saved `);
     return new Promise((resolve, reject) => {
-        fs.writeFile(dstPath, buffer, 'utf8', error => {
+        fs.writeFile(dstPath, buffer, error => {
             if (error) {
                 log(`${dstPath} saved with error`);
                 reject(error);
