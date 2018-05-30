@@ -3,6 +3,7 @@
 import phantom from 'phantom';
 import fs from 'fs';
 import path from 'path';
+import {mkdirp} from 'mkdirp';
 
 /**
  * @typedef {object} Sizes
@@ -46,7 +47,7 @@ export function svg2PngFiles(fileMap, size = {}, pages = PARALLEL_PAGES) {
     return phantom.create()
         .then(instance => {
             log('phantom instance created');
-            phantomInstance = instance;
+            phantomInstance = instance;            
             return convertMany(instance, fileMap, size, pages);
         })
         .then(results => {
@@ -78,7 +79,12 @@ export function svg2PngDir(srcDir, dstDir, size = {}, pages = PARALLEL_PAGES) {
                 let dstFile = path.join(dstDir, path.parse(file).name + '.png');
                 fileMap[srcFile] = dstFile;
             });
-            resolve(fileMap);
+
+            if(!fs.existsSync(dstDir)) {
+                mkdirp(dstDir, () => resolve(fileMap));
+            } else {
+                resolve(fileMap);
+            }
         });
     }).then(fileMap => svg2PngFiles(fileMap, size, pages));
 }
@@ -127,14 +133,14 @@ function convertMany(instance, fileMap, size, pages) {
 function saveBuffer(dstPath, buffer) {
     log(`${dstPath} will be saved `);
     return new Promise((resolve, reject) => {
-        fs.writeFile(dstPath, buffer, error => {
-            if (error) {
-                log(`${dstPath} saved with error`);
-                reject(error);
-            }
-            log(`${dstPath} saved successfully`);
-            resolve(dstPath);
-        });
+    fs.writeFile(dstPath, buffer, error => {
+        if (error) {
+            log(`${dstPath} saved with error`);
+            reject(error);
+        }
+        log(`${dstPath} saved successfully`);
+        resolve(dstPath);
+    });
     });
 }
 
