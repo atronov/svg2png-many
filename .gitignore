@@ -1,7 +1,7 @@
 /node_modules
-/lib
 .idea
 .vscode
+.tmp
 #tmp
 #tests
 /nbproject/private/
