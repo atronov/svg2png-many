@@ -1,6 +1,9 @@
 /node_modules
-/lib
 .idea
 .vscode
+.tmp
 #tmp
 #tests
+/nbproject/private/
+/nbproject/project.properties
+/nbproject/project.xml
